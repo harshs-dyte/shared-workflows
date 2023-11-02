@@ -11,6 +11,10 @@ on:
         required: false
         type: string
         default: "11"
+      extra-flags:
+        required: false
+        type: string
+        default: ""
     secrets:
       github-token:
         required: true
@@ -36,4 +40,4 @@ jobs:
 
       - name: Run tests
         run: |
-          ./gradlew check
+          ./gradlew check ${{ inputs.extra-flags }}
