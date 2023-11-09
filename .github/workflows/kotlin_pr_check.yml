@@ -10,7 +10,7 @@ on:
       java-version:
         required: false
         type: string
-        default: "11"
+        default: "17"
       extra-flags:
         required: false
         type: string
