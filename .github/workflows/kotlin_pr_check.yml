@@ -35,6 +35,12 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
 
+      - name: Cache Kotlin/Native compiler
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle.kts') }}
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
