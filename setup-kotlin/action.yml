@@ -1,0 +1,28 @@
+name: 'Set up build environment for Kotlin Multiplatform projects'
+inputs:
+  java-version:
+    required: true
+  github-token:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.github-token }}
+
+    - name: Set up JDK ${{ inputs.java-version }}
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+
+    - name: Cache Kotlin/Native compiler
+      uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+      with:
+        path: ~/.konan
+        key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle.kts') }}
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
