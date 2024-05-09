@@ -1,7 +1,7 @@
 name: Check for lint/build errors
 
 on:
-  workflow-call:
+  workflow_call:
     inputs:
       node-version:
         required: false
