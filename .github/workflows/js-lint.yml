@@ -6,19 +6,18 @@ on:
       node-version:
         required: false
         default: "16"
+        type: "string"
       submodules:
         required: false
         default: "recursive"
+        type: "string"
     secrets:
       npm_token:
         required: true
-        type: string
       aws_oidc_sa:
         required: true
-        type: string
       semantic_release_pat:
         required: true
-        type: string  
       
 jobs:
   lint:
@@ -31,7 +30,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        submodules: {{ inputs.submodules }}
+        submodules: ${{ inputs.submodules }}
         token: ${{ secrets.semantic_release_pat }}
         
     - name: Configure AWS Credentials
@@ -48,7 +47,7 @@ jobs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: {{ inputs.node-version }}
+        node-version: ${{ inputs.node-version }}
         registry-url: https://registry.npmjs.org/
 
     - name: Set NPM_TOKEN
@@ -69,7 +68,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        submodules: {{ inputs.submodules }}
+        submodules: ${{ inputs.submodules }}
         token: ${{ secrets.semantic_release_pat }}
         
     - name: Configure AWS Credentials
@@ -86,7 +85,7 @@ jobs:
 
     - uses: actions/setup-node@v4
       with:
-        node-version: {{ inputs.node-version }}
+        node-version: ${{ inputs.node-version }}
         registry-url: https://registry.npmjs.org/
 
     - name: Set NPM_TOKEN
