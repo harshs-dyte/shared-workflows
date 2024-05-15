@@ -1,0 +1,98 @@
+name: Check for lint/build errors
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        default: "16"
+        type: "string"
+      submodules:
+        required: false
+        default: "recursive"
+        type: "string"
+    secrets:
+      npm_token:
+        required: true
+      aws_oidc_sa:
+        required: true
+      semantic_release_pat:
+        required: true
+      
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: ${{ inputs.submodules }}
+        token: ${{ secrets.semantic_release_pat }}
+        
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.aws_oidc_sa }}
+        aws-region: ap-south-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        mask-password: true
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: https://registry.npmjs.org/
+
+    - name: Set NPM_TOKEN
+      run: echo "NPM_TOKEN=${{ secrets.npm_token }}" >> $GITHUB_ENV
+
+    - name: npm install, lint
+      run: |
+        npm install
+        npm run lint
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: ${{ inputs.submodules }}
+        token: ${{ secrets.semantic_release_pat }}
+        
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.aws_oidc_sa }}
+        aws-region: ap-south-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        mask-password: true
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: https://registry.npmjs.org/
+
+    - name: Set NPM_TOKEN
+      run: echo "NPM_TOKEN=${{ secrets.npm_token }}" >> $GITHUB_ENV
+
+    - name: Install skaffold
+      run: curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/
+
+    - name: Build image
+      run: skaffold build --profile=production --push=false
