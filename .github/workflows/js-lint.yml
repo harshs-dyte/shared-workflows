@@ -11,6 +11,10 @@ on:
         required: false
         default: "recursive"
         type: "string"
+      upload-debug-logs:
+        required: false
+        default: false
+        type: "boolean"
     secrets:
       npm_token:
         required: true
@@ -57,6 +61,14 @@ jobs:
       run: |
         npm install
         npm run lint
+    
+    - name: Upload debug logs
+      if: ${{ inputs.upload-debug-logs == 'true' && failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-logs
+        path: /home/runner/.npm/_logs
+        
 
   build:
     runs-on: ubuntu-latest
