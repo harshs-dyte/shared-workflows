@@ -1,0 +1,63 @@
+name: Automated Tests
+
+on:
+  workflow_call:
+
+    inputs:
+      node-version:
+        required: false
+        default: "16"
+        type: "string"
+
+    secrets:
+      NPM_TOKEN:
+        required: true
+      TEST_ORG_ID:
+        required: true
+      TEST_ORG_TOKEN:
+        required: true
+      SEMANTIC_RELEASE_PAT:
+        required: true
+      BACKEND_BASE_URL:
+        required: true
+      CYPRESS_ENV:
+        required: true
+
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{ secrets.semantic_release_pat }}
+    
+    - name: Checkout api-test
+      uses: actions/checkout@v4
+      with:
+        repository: dyte-in/api-test
+        token: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+        path: api-test
+        ref: main
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: https://registry.npmjs.org/
+
+    - name: Setup Cypress env and run
+      run: |
+        cd $PWD/api-test
+        echo -e $CYPRESS_ENV | base64 -d >> ./cypress.env.json
+        npm install
+        npx cypress run --env grepTags=@api
+      env:
+        CYPRESS_ENV: ${{ secrets.CYPRESS_ENV }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        TEST_ORG_ID: ${{ secrets.TEST_ORG_ID }}
+        TEST_ORG_TOKEN: ${{ secrets.TEST_ORG_TOKEN }}
+        BACKEND_BASE_URL: ${{ secrets.BACKEND_BASE_URL }}
+

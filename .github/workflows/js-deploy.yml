@@ -1,0 +1,134 @@
+name: Deploy the build to cluster
+
+on:
+  workflow_call:
+    inputs:
+      aws-project-name:
+        required: false
+        type: "string"
+      submodules:
+        required: false
+        default: "recursive"
+        type: "string"
+      aws-region:
+        required: false
+        default: "ap-south-1"
+        type: "string"
+      cloud-provider:
+        required: false
+        default: "aws"
+        type: "string"
+      gcp-project-repo:
+        required: false
+        type: "string"
+
+    secrets:
+      NPM_TOKEN:
+        required: true
+      SEMANTIC_RELEASE_PAT:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+      GCP_OIDC_PROVIDER_ID:
+        required: false
+      GCP_OIDC_SA:
+        required: false
+      GCP_DOCKER_REGISTRY:
+        required: false
+      DOCKER_REGISTRY:
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        submodules: ${{ inputs.submodules }}
+        token: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+
+    - name: Deploy to AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        mask-password: true
+
+    - name: Set Docker image name and NPM Token
+      shell: bash
+      run: |
+        echo "IMAGE=${{ secrets.DOCKER_REGISTRY }}/$PROJECT_NAME" >> $GITHUB_ENV
+        echo "NPM_TOKEN=${{ secrets.NPM_TOKEN }}" >> $GITHUB_ENV
+      env:
+        PROJECT_NAME: ${{ inputs.aws-project-name }}
+
+    - name: Install skaffold
+      run: curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/
+
+    - name: Build and push image
+      shell: bash
+      run: | 
+        skaffold build --profile=production
+
+    - name: Calculate git commit sha
+      id: vars
+      shell: bash
+      run: |
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Push Image to Amazon ECR
+      if: ${{ inputs.cloud-provider == 'aws' }}
+      run: |
+        docker tag $IMAGE:${{ steps.vars.outputs.sha_short }} $IMAGE:${GITHUB_REF##*/}
+        docker tag $IMAGE:${{ steps.vars.outputs.sha_short }} $IMAGE:latest
+        docker push $IMAGE:${GITHUB_REF##*/}
+        docker push $IMAGE:latest
+
+    - id: auth
+      name: Authenticate with Google Cloud
+      if: ${{ inputs.cloud-provider == 'gcp' }}
+      uses: google-github-actions/auth@v2
+      with:
+        token_format: access_token
+        workload_identity_provider: ${{ secrets.GCP_OIDC_PROVIDER_ID }}
+        service_account: ${{ secrets.GCP_OIDC_SA }}
+        access_token_lifetime: 900s
+    
+    - name: Login to Artifact Registry
+      if: ${{ inputs.cloud-provider == 'gcp' }}
+      uses: docker/login-action@v3
+      with:
+        registry: asia-south1-docker.pkg.dev
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
+
+    - name: Tag and Push Image to GCP
+      if: ${{ inputs.cloud-provider == 'gcp' }}
+      shell: bash
+      run: |
+        GCP_IMAGE="${{ secrets.GCP_DOCKER_REGISTRY }}/$GCP_PROJECT_NAME/$GCP_PROJECT_NAME"
+        docker tag $IMAGE:${{ steps.vars.outputs.sha_short }} $GCP_IMAGE:${GITHUB_REF##*/}
+        docker tag $IMAGE:${{ steps.vars.outputs.sha_short }} $GCP_IMAGE:latest
+        docker push $GCP_IMAGE:${GITHUB_REF##*/}
+        docker push $GCP_IMAGE:latest
+      env:
+        GCP_PROJECT_NAME: ${{ inputs.gcp-project-repo }}
+
+    - name: Invoke deployinator Lambda
+      uses: gagoar/invoke-aws-lambda@v3.3.2
+      with:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        REGION: ${{ inputs.aws-region }}
+        FunctionName: deployinator-dev-bot
+        Payload: '{"github": ${{ toJSON(github) }}, "short_sha": ${{ toJSON(steps.vars.outputs.sha_short) }}}'

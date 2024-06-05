@@ -26,10 +26,6 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    permissions:
-      contents: "read"
-      id-token: "write"
-      
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -52,30 +48,24 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        registry-url: https://registry.npmjs.org/
-
-    - name: Set NPM_TOKEN
-      run: echo "NPM_TOKEN=${{ secrets.npm_token }}" >> $GITHUB_ENV
 
     - name: npm install, lint
+      shell: bash
       run: |
         npm install
         npm run lint
-    
+      env:
+        NPM_TOKEN: "${{ secrets.npm_token }}"
+
     - name: Upload debug logs
       if: ${{ inputs.upload-debug-logs == 'true' && failure() }}
       uses: actions/upload-artifact@v4
       with:
         name: debug-logs
         path: /home/runner/.npm/_logs
-        
 
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: "read"
-      id-token: "write"
-    
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -98,13 +88,13 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        registry-url: https://registry.npmjs.org/
-
-    - name: Set NPM_TOKEN
-      run: echo "NPM_TOKEN=${{ secrets.npm_token }}" >> $GITHUB_ENV
 
     - name: Install skaffold
+      shell: bash
       run: curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && sudo install skaffold /usr/local/bin/
 
     - name: Build image
+      shell: bash
       run: skaffold build --profile=production --push=false
+      env:
+        NPM_TOKEN: ${{ secrets.npm_token }}
