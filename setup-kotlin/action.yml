@@ -1,8 +1,10 @@
 name: 'Set up build environment for Kotlin Multiplatform projects'
 inputs:
   java-version:
+    description: "The version of Java to be provisioned"
     required: true
   github-token:
+    description: "A GitHub token capable of cloning the repository"
     required: true
 runs:
   using: composite
