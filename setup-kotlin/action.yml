@@ -33,3 +33,4 @@ runs:
       shell: bash
       run: |
         echo 'org.gradle.jvmargs = -Xmx4G -Dkotlin.daemon.jvm.options="-Xmx4G"' >> "${HOME}/.gradle/gradle.properties"
+        echo 'org.gradle.daemon = false' >> "${HOME}/.gradle/gradle.properties"
