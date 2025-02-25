@@ -33,4 +33,4 @@ jobs:
 
       - name: Run tests
         run: |
-          ./gradlew check ${{ inputs.extra-flags }}
+          ./gradlew --no-daemon check ${{ inputs.extra-flags }}
