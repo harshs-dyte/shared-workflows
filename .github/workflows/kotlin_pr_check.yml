@@ -36,8 +36,7 @@ jobs:
 
       - name: Validate Swift formatting
         run: |
-          if [[ -n $(git ls-files | grep \\.swift) ]]; then
-            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-            brew install swiftformat
-            swiftformat --strict ./**/*.swift
+          swift_files=$(git ls-files | grep \\.swift$ | tr '\n' ' ')
+          if [ -n "${swift_files}" ]; then
+            swiftformat --strict
           fi
