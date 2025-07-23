@@ -38,5 +38,5 @@ jobs:
         run: |
           swift_files=$(git ls-files | grep \\.swift$ | tr '\n' ' ')
           if [ -n "${swift_files}" ]; then
-            swiftformat --strict ${swift_files}
+            swiftformat --verbose --strict ${swift_files}
           fi
