@@ -1,4 +1,5 @@
-name: 'Set up build environment for Kotlin Multiplatform projects'
+name: "setup-kotlin"
+description: "Sets up the build environment for Kotlin Multiplatform projects"
 inputs:
   java-version:
     description: "The version of Java to be provisioned"
