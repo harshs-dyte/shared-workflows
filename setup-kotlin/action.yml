@@ -7,12 +7,17 @@ inputs:
   github-token:
     description: "A GitHub token capable of cloning the repository"
     required: true
+  repository:
+    description: "The repository to be cloned"
+    required: false
+    default: "${{ github.repository }}"
 runs:
   using: composite
   steps:
     - name: Check out code
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
+        repository: "${{ inputs.repository }}"
         token: ${{ inputs.github-token }}
 
     - name: Set up JDK ${{ inputs.java-version }}
