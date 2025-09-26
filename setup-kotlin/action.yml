@@ -11,6 +11,10 @@ inputs:
     description: "The repository to be cloned"
     required: false
     default: "${{ github.repository }}"
+  fetch-depth:
+    description: "The clone depth for the repository being closed"
+    required: false
+    default: 1
 runs:
   using: composite
   steps:
@@ -19,6 +23,7 @@ runs:
       with:
         repository: "${{ inputs.repository }}"
         token: ${{ inputs.github-token }}
+        fetch-depth: ${{ inputs.fetch-depth }}
 
     - name: Set up JDK ${{ inputs.java-version }}
       uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4.6.0
