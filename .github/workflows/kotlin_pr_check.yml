@@ -40,7 +40,7 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Setup KMP
-        uses: dyte-in/shared-workflows/setup-kotlin@main
+        uses: harshs-dyte/shared-workflows/setup-kotlin@main
         with:
           java-version: ${{ inputs.java-version }}
           github-token: ${{ secrets.github-token }}
