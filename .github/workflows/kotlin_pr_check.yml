@@ -20,8 +20,23 @@ on:
         required: true
 
 jobs:
+  check:
+    name: Run checks
+    runs-on: ${{ inputs.runs-on }}
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ ! "$PR_TITLE" =~ RTK-[0-9]+ ]] && [[ ! "$PR_TITLE" =~ NOISSUE ]]; then
+            echo "::error PR title must start with RTK followed by numbers (e.g., RTK-1234), or contain NOISSUE."
+            exit 1
+          fi
+
   test:
     name: Run tests
+    needs: check
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Setup KMP
